@@ -8,11 +8,10 @@ entity BinaryToBCD is
         reset       : in std_logic;                      
         A           : in std_logic_vector(3 downto 0);   
         B           : in std_logic_vector(3 downto 0);  
+        Sel         : in std_logic_vector(1 downto 0);
         adder_result : in std_logic_vector(4 downto 0);  
         overflow    : in std_logic;                      
-        bcd_out     : out std_logic_vector(7 downto 0);  
-        debug_signed : out integer;                     
-        debug_abs    : out integer;                      
+        bcd_out     : out std_logic_vector(7 downto 0);                        
         A_bcd       : out std_logic_vector(4 downto 0); 
         B_bcd       : out std_logic_vector(4 downto 0) 
     );
@@ -71,42 +70,6 @@ begin
     A_bcd <= temp_bcd_A;
     B_bcd <= temp_bcd_B;
 
-
-
---    -- A와 B의 BCD 변환
---    process(A, B)
---        variable abs_A : std_logic_vector(3 downto 0);
---        variable abs_B : std_logic_vector(3 downto 0);
---        variable temp_sign_A : std_logic;
---        variable temp_sign_B : std_logic;
---    begin
---        -- A 변환
---        if A(3) = '1' then
---            temp_sign_A := '1';
---            abs_A := std_logic_vector(unsigned(not A) + 1); -- 2의 보수
---        else
---            temp_sign_A := '0';
---            abs_A := A;
---        end if;
---        temp_bcd_A_next <= temp_sign_A & abs_A;
-
---        -- B 변환
---        if B(3) = '1' then
---            temp_sign_B := '1';
---            abs_B := std_logic_vector(unsigned(not B) + 1); -- 2의 보수
---        else
---            temp_sign_B := '0';
---            abs_B := B;
---        end if;
---        temp_bcd_B_next <= temp_sign_B & abs_B;
-
---        -- 결과 출력
---        A_bcd <= temp_bcd_A_next;
---        B_bcd <= temp_bcd_B_next;
---    end process;
-    
-    
-    
    
     process(A, B, adder_result, overflow)
         variable abs_temp        : integer := 0;               -- 임시 절대값 계산 변수
@@ -119,6 +82,8 @@ begin
         tens_next <= "000";
         bcd_units_next <= "0000";
 
+     -- Sel에 따른 연산 구분
+    if Sel = "00" then
         -- 1) 양수 + 양수 덧셈
         if A(3) = '0' and B(3) = '0' then
             abs_temp := to_integer(unsigned(adder_result(3 downto 0))); -- MSB는 항상 0
@@ -141,6 +106,31 @@ begin
                 abs_temp := to_integer(unsigned(trimmed_result) + 1); -- 2의 보수 처리
             end if;
         end if;
+
+    -- Sel = 01 조건 추가 (뺄셈 연산)
+    elsif Sel = "01" then
+        if A(3) = '0' and B(3) = '1' then --양수 - 음수 
+            abs_temp := to_integer(unsigned(adder_result(3 downto 0))); -- MSB는 항상 0
+            is_negative_next <= '0';
+
+        
+        elsif A(3) = '1' and B(3) = '0' then --음수 - 양수
+            is_negative_next <= '1'; -- 결과는 항상 음수
+            trimmed_result := not adder_result(3 downto 0); -- NOT 결과 (4비트)
+            abs_temp := to_integer(unsigned(trimmed_result) + 1); -- 2의 보수 처리
+        
+        else
+            if adder_result(4) = '1' then -- CarryOut 존재(=>결과 양수)
+                abs_temp := to_integer(unsigned(adder_result(3 downto 0))); -- CarryOut 무시
+                is_negative_next <= '0';
+            else -- CarryOut 없음(=>결과 음수)
+                is_negative_next <= '1';
+                trimmed_result := not adder_result(3 downto 0); -- NOT 결과 (4비트)
+                abs_temp := to_integer(unsigned(trimmed_result) + 1); -- 2의 보수 처리
+            end if;
+        end if;
+        
+    end if;
 
         -- 절대값 계산
         abs_value_next <= abs(abs_temp);
@@ -168,8 +158,6 @@ begin
         end case;
 
         -- debug 
---        debug_signed <= abs_temp; 
---        debug_abs <= abs(abs_temp);
     end process;
 
     -- 최종 BCD : Sign Bit + Tens + Units
