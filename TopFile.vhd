@@ -12,14 +12,13 @@ entity Top_File is
         B: in std_logic_vector(3 downto 0);
         Sel: in std_logic_vector(1 downto 0);
         a_to_g: out std_logic_vector(7 downto 0);
-        an: out std_logic_vector(7 downto 0);
-        Result: out std_logic_vector(4 downto 0); --결과 
-        --BCD_Result: out std_logic_vector(7 downto 0); -- BCD 변환
+        an: out std_logic_vector(7 downto 0)
+        --Result: out std_logic_vector(4 downto 0); --결과  --Bitstream시 주석처리
+        --BCD_Result: out std_logic_vector(7 downto 0); -- BCD 변환 
         --A_BCD: out std_logic_vector(4 downto 0); -- A의 BCD 
         --B_BCD: out std_logic_vector(4 downto 0); -- B의 BCD 
-        debug_signed: out integer; -- 디버깅
-        debug_abs: out integer;    -- 디버깅
-        x_inter_out: out std_logic_vector(20 downto 0) --출력 
+    
+        --x_inter_out: out std_logic_vector(20 downto 0) --출력 --Bitstream시 주석처리
     );
 end Top_File;
 
@@ -28,6 +27,8 @@ architecture Behavioral of Top_File is
 
     -- User-defined Signals
     signal adder_result: std_logic_vector(4 downto 0); 
+    signal Result : std_logic_vector(4 downto 0); --Simulation시 주석처리
+    
     signal b_complement: std_logic_vector(3 downto 0); 
     signal selected_b: std_logic_vector(3 downto 0);   -- Adder 입력될 B 
     signal selected_cin: std_logic;   -- Adder 전달 Cin 신호
@@ -42,8 +43,8 @@ architecture Behavioral of Top_File is
     signal A_BCD: std_logic_vector(4 downto 0); 
     signal B_BCD: std_logic_vector(4 downto 0); 
     
-    signal debug_signed_signal : integer;
-    signal debug_abs_signal    : integer; 
+--    signal debug_signed_signal : integer;
+--    signal debug_abs_signal    : integer; 
 
 
     -- FourBitAdder 
@@ -65,11 +66,12 @@ architecture Behavioral of Top_File is
             reset       : in std_logic;                     
             A        : in std_logic_vector(3 downto 0); 
             B        : in std_logic_vector(3 downto 0); 
+            Sel         : in std_logic_vector(1 downto 0);
             adder_result : in std_logic_vector(4 downto 0); -- Adder 5비트
             overflow    : in std_logic;                      -- Overflow 신호
             bcd_out      : out std_logic_vector(7 downto 0); -- 최종 BCD 출력
-            debug_signed : out integer;
-            debug_abs    : out integer;  
+--            debug_signed : out integer;
+--            debug_abs    : out integer;  
             A_bcd       : out std_logic_vector(4 downto 0);  -- A Sign + BCD
             B_bcd       : out std_logic_vector(4 downto 0)  -- B Sign + BCD
         );
@@ -87,7 +89,7 @@ architecture Behavioral of Top_File is
     end component;
 
 begin
-    x_inter_out <= x_inter;
+    --x_inter_out <= x_inter; --Bitstream시 주석처리
     
     -- OP Code
     process(Sel)
@@ -120,12 +122,13 @@ begin
         clk => Clk,
         reset => Reset,
         A => A,                       
-        B => B,                      
+        B => B,      
+        Sel => Sel,            
         adder_result => adder_result, 
         overflow => overflow_signal, 
         bcd_out => BCD_Result,         
-        debug_signed => debug_signed_signal,
-        debug_abs => debug_abs_signal,        
+--        debug_signed => debug_signed_signal,
+--        debug_abs => debug_abs_signal,        
         A_bcd => A_BCD, 
         B_bcd => B_BCD  
         
